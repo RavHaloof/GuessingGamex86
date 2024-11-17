@@ -143,12 +143,16 @@
         ret
 
 	win:
-		pushq %rbp					# Entering a function, pushing stack
-        movq %rsp, %rbp	
 
 		lea win_msg, %rdi			# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
+		
+		# Since we are technically still in the comparison function
+		# We do not need to push the stack, but we do want to pop it to avoid returning
+		# To the continuation of the function, we want to get back to main
 
 		popq %rbp					# We pop the stack and return to main
         ret
+
+		
