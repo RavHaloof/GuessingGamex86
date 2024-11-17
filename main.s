@@ -6,15 +6,15 @@
 .section	.rodata				# global constants
 	init_msg: 					.asciz "Enter configuration seed:\n"
 	ez_msg: 					.asciz "Would you like to play in easy mode? (y/n)"
-	guess_msg: 					.asciz "What is your guess?"
+	guess_msg: 					.asciz "What is your guess? "
 	try_again_msg: 				.asciz "Incorrect. "
 	game_over:					.asciz "Game over, you lost :(. The correct answer was "
 	double_msg: 				.asciz "Double or nothing! Would you like to continue to another round?"
 	win_msg:					.asciz "Congratz! You won "
-	win2_msg: 					.asciz " rounds!"
+	win_msg2: 					.asciz " rounds!"
 	yes:	 					.asciz "y"
 	no:							.asciz "n"
-	print_num:					.asciz "%d"
+	num_prompt:					.asciz "%d"
 	go_down:					.asciz "\n"
 
 
@@ -34,25 +34,30 @@
 		movq	%rsp,	%rbp
 		
 		call enter_seed				# Gets seed from user input
-		call random_num				# Generates a random number between 0 - N
-		call line_down				# Goes down a line
+		call random_num_gen			# Generates a random number between 0 - N
+		call guess_num				# Prompts the user to take a guess
+		call compare_num			# Compares the guess to the correct answer
+		call line_down				# Goes down a line to keep things tidy
 		
 
-		movq $print_num, %rdi		# Load %d into rdi
-		movq correct_num, %rsi		# Load the actual number we want to print
+		movq $num_prompt, %rdi		# Load %d into rdi
+		movq correct_num(%rip), %rsi		# Load the actual number we want to print
 		xorq %rax, %rax				# Cleaning rax
 		call printf					# function printf
+		call line_down
 
-		movq $go_down, %rdi		
-		xorq %rax, %rax
-		call printf
+		movq $num_prompt, %rdi		# Load %d into rdi
+		movq num_guess(%rip), %rsi		# Load the actual number we want to print
+		xorq %rax, %rax				# Cleaning rax
+		call printf					# function printf
+		call line_down
 
 		# Return to OS with status 0
 		mov $0, %rax
 		popq	%rbp
 		ret
 
-	random_num:
+	random_num_gen:
 		pushq %rbp					# Entering a function, pushing stack
         movq %rsp, %rbp				
 		movq seed_val, %rdi			# Moves the seed into the rdi register
@@ -73,12 +78,12 @@
 		xor %rax, %rax				# Cleans rax
 		call printf					# Calling printf function
 
-		lea print_num(%rip), %rdi	# We add the prefix to scan the input correctly
+		lea num_prompt(%rip), %rdi	# We add the prefix to scan the input correctly
     	lea seed_val(%rip), %rsi	# We put the seed number in rsi to be accepted by the scan
     	xor %rax, %rax				# We clean rax
     	call scanf					# Calling scanf function
 
-#		lea print_num(%rip), %rdi	# Loads the seeds string into rdi
+#		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
 #		mov $seed_val, %rsi
 #		xor %rax, %rax				# Cleans rax
 #		call printf					# Calling printf function
@@ -94,6 +99,56 @@
 		lea go_down, %rdi			# Loads \n into rdi
 		xor %rax, %rax				# Cleans rax
 		call printf					# Calling printf function
+
+		popq %rbp					# We pop the stack and return to main
+        ret
+
+	guess_num:
+		pushq %rbp					# Entering a function, pushing stack
+        movq %rsp, %rbp	
+
+		lea guess_msg, %rdi			# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+
+		lea num_prompt(%rip), %rdi	# We add the prefix to scan the input correctly
+    	lea num_guess(%rip), %rsi	# We put the seed number in rsi to be accepted by the scan
+    	xor %rax, %rax				# We clean rax
+    	call scanf					# Calling scanf function
+
+		popq %rbp					# We pop the stack and return to main
+        ret
+
+	print_int:
+		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
+		mov num_guess, %rsi
+		xor %rax, %rax				# Cleans rax
+		call printf					# Calling printf function
+
+	compare_num:
+		pushq %rbp					# Entering a function, pushing stack
+        movq %rsp, %rbp	
+		
+ 		movl num_guess(%rip), %eax      # Load the value of num_guess into %eax (32-bit)
+    	movl correct_num(%rip), %ebx    # Load the value of correct_num into %ebx (32-bit)
+
+		cmpl %ebx, %eax             # Compare the values in %eax and %ebx
+		je win						# Jumps to win message if the two are equal
+
+		lea try_again_msg, %rdi		# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+
+		popq %rbp					# We pop the stack and return to main
+        ret
+
+	win:
+		pushq %rbp					# Entering a function, pushing stack
+        movq %rsp, %rbp	
+
+		lea win_msg, %rdi			# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
 
 		popq %rbp					# We pop the stack and return to main
         ret
