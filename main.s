@@ -24,6 +24,7 @@
 	continue_answer:			.space 1
 	ez_mode_answer:				.space 1
 	correct_num:				.space 4
+	win_flag:					.space 4
 
 .section	.text
 .globl		main
@@ -38,7 +39,7 @@
 		call guessing_game
 
 		movq $num_prompt, %rdi		# Load %d into rdi
-		movq num_guess(%rip), %rsi		# Load the actual number we want to print
+		movq num_guess(%rip), %rsi	# Load the actual number we want to print
 		xorq %rax, %rax				# Cleaning rax
 		call printf					# function printf
 		call line_down
@@ -140,6 +141,7 @@
 		pushq %rbp					# Entering a function, pushing stack
         movq %rsp, %rbp	
 
+		game_loop:
 		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
 		mov M, %rsi					
 		xor %rax, %rax				# Cleans rax
@@ -149,16 +151,23 @@
 		call guess_num				# Aceepts user guess
 		call compare_num			# Compares the guess with the actual answer
 
+		xorq %rax, %rax
+		cmp %rax, win_flag
+		jne end_loop
+
 		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
 		mov M, %rsi
 		xor %rax, %rax				# Cleans rax
 		call printf	
 		call line_down
 
+		mov M, %rcx
 		xorq %rax, %rax
-		cmp M, %rax
-		jne guessing_game
-		popq %rbp					# We pop the stack and return to main
+		cmp %rcx, %rax
+		jne game_loop
+		
+		end_loop:
+		popq %rbp					# We pop the stack and return to main		
 		
         ret
 
@@ -167,6 +176,9 @@
 		lea win_msg, %rdi			# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
+
+		mov $1, %rax
+		mov %rax, win_flag			# Sets the win flag to 1, indicating that the user won
 		
 		# Since we are technically still in the comparison function
 		# We do not need to push the stack, but we do want to pop it to avoid returning
