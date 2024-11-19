@@ -1,6 +1,6 @@
 // Avi Ben David, 324026038
 .section	.data 				# global variables
-	N: 							.long 11
+	N: 							.long 10
 	M: 							.long 5
 
 .section	.rodata				# global constants
@@ -25,6 +25,8 @@
 	ez_mode_answer:				.space 1
 	correct_num:				.space 4
 	win_flag:					.space 4
+	win_count:					.space 4
+	guess_counter:				.space 4
 
 .section	.text
 .globl		main
@@ -57,6 +59,7 @@
 		xorq %rax, %rax				# Cleaning rax
 		call rand					# Random number generator pt 2
 		movl N, %edi				# Moves N into edi
+		inc %edi					# Increases edi by 1, to make the range 0-N instaed of 0-(N-1)
 		divl %edi					# Divides EDX:EAX by edi, saves the reminder in EDX
 		mov  %edx, correct_num		# We move the reminder and make it the random number
 		popq %rbp					# We pop the stack and return to main
@@ -127,8 +130,9 @@
 		cmpl %ebx, %eax             # Compare the values in %eax and %ebx
 		je win						# Jumps to win message if the two are equal
 
-		mov $1, %rax				# Moves 1 to rax, helps avoid warnings in code
-		sub %rax, M					# Decreases M by one
+		mov guess_counter, %rax					# Moves M to rax because dec doesn't work on variables
+		dec %rax					
+		mov %rax, guess_counter					# Decreases M by one
 
 		lea try_again_msg, %rdi		# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
@@ -141,9 +145,19 @@
 		pushq %rbp					# Entering a function, pushing stack
         movq %rsp, %rbp	
 
+		# Sets the win counter to 0 since we start a new game
+		mov $0, %rax
+		mov %rax, win_flag
+		
+		# Sets the guess counter to M since we start a new game
+		mov M, %rax
+		mov %rax, guess_counter
+
 		game_loop:
+
+		#Printing M, will be deleted later
 		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
-		mov M, %rsi					
+		mov guess_counter, %rsi					
 		xor %rax, %rax				# Cleans rax
 		call printf	
 		call line_down
@@ -151,21 +165,21 @@
 		call guess_num				# Aceepts user guess
 		call compare_num			# Compares the guess with the actual answer
 
-		xorq %rax, %rax
-		cmp %rax, win_flag
+		mov win_flag, %rcx			
+		cmp $0, %rcx				# Checks win flag, if the user indeed won, skips the
 		jne end_loop
 
 		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
-		mov M, %rsi
+		mov guess_counter, %rsi
 		xor %rax, %rax				# Cleans rax
 		call printf	
 		call line_down
 
-		mov M, %rcx
-		xorq %rax, %rax
-		cmp %rcx, %rax
-		jne game_loop
-		
+		mov guess_counter, %ecx		
+		jecxz end_loop				# Jumps if ecx is zero, AKA if the user is out of guesses, ends the game
+
+		jmp game_loop
+
 		end_loop:
 		popq %rbp					# We pop the stack and return to main		
 		
@@ -179,6 +193,7 @@
 
 		mov $1, %rax
 		mov %rax, win_flag			# Sets the win flag to 1, indicating that the user won
+		add %rax, win_count			# increases the user's win count by 1
 		
 		# Since we are technically still in the comparison function
 		# We do not need to push the stack, but we do want to pop it to avoid returning
