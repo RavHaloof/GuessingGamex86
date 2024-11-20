@@ -41,8 +41,8 @@
 		call enter_seed				# Gets seed from user input
 		call random_num_gen			# Generates a random number between 0 - N
 		# Sets the win counter to 0 since we start a new game
-		mov $0, %rax
-		mov %rax, win_flag
+		mov $0, %eax
+		mov %eax, win_flag
 		
 		call guessing_game
 
@@ -127,9 +127,9 @@
 		cmpl %ebx, %eax             # Compare the values in %eax and %ebx
 		je win						# Jumps to win message if the two are equal
 
-		mov guess_counter, %rax					# Moves M to rax because dec doesn't work on variables
+		mov guess_counter, %rax		# Moves M to rax because dec doesn't work on variables
 		dec %rax					
-		mov %rax, guess_counter					# Decreases M by one
+		mov %rax, guess_counter		# Decreases M by one
 
 		lea try_again_msg, %rdi		# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
@@ -145,14 +145,13 @@
 		call printf					# Prints the message prompt with function
 		call line_down
 
-		mov $1, %rax
-		mov %rax, win_flag			# Sets the win flag to 1, indicating that the user won
+		mov $1, %eax
+		mov %eax, win_flag			# Sets the win flag to 1, indicating that the user won
 		add %rax, win_count			# increases the user's win count by 1
 		
 		# Since we are technically still in the comparison function
 		# We do not need to push the stack, but we do want to pop it to avoid returning
 		# To the continuation of the function, we want to get back to main
-
 		popq %rbp					# We pop the stack and return to main
         ret
 	
@@ -170,8 +169,8 @@
 		call compare_num			# Compares the guess with the actual answer
 
 		# In case the user guessed the number right, checks the win flag and jumps to the label if it's equal to 1
-		mov win_flag, %rcx			# Moves the value of the win flag to rcx, can be either 0 or 1
-		cmp $0, %rcx				# Checks win flag, if it's 1, skips to the win label
+		mov win_flag, %ecx			# Moves the value of the win flag to rcx, can be either 0 or 1
+		cmp $0, %ecx				# Checks win flag, if it's 1, skips to the win label
 		jne double_or_nothing
 
 		# In case the ser is out of guesses, checks the number in counter, if it's 0, stops the game
@@ -220,26 +219,14 @@
 
 		double_accepted:
 
-		mov $0, %rcx
-		mov %rcx, win_flag
+		mov $0, %ecx
+		mov %ecx, win_flag
 
 		call double_game
 
 		mov win_count, %rcx
 		inc %rcx
 		mov %rcx, win_count
-
-		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
-		mov win_count, %rsi
-		xor %rax, %rax				# Cleans rax
-		call printf					# Calling printf function
-		call line_down
-
-		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
-		mov win_flag, %rsi
-		xor %rax, %rax				# Cleans rax
-		call printf					# Calling printf function
-		call line_down
 
 		call random_num_gen
 
