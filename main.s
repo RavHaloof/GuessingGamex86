@@ -180,11 +180,12 @@
 		mov num_guess, %ecx			# Moves the guessed number by the user to ecx
 		cmpl correct_num, %ecx		# Compares it with the correct number
 		jg ez_high					# If the correct number is lower. tells the user their number was too high
-		
+
 		# o.w their guess was too low
 		lea ez_low_msg, %rdi		# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
+		call line_down
 		jmp end_cmp					# Jumps to the end
 
 		ez_high:
@@ -192,6 +193,7 @@
 		lea ez_high_msg, %rdi		# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
+		call line_down
 
 
 		end_cmp:
