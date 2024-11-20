@@ -1,4 +1,4 @@
-// Avi Ben David, 324026038
+# 324026038 Avi Ben David
 .section	.data 				# global variables
 	N: 							.long 10
 	M: 							.long 5
@@ -8,16 +8,16 @@
 	ez_flag:					.long 0
 
 .section	.rodata				# global constants
-	init_msg: 					.asciz "Enter configuration seed:\n"
-	ez_msg: 					.asciz "Would you like to play in easy mode? (y/n)"
-	ez_high_msg:				.asciz "Your guess was above the actual number ..."
-	ez_low_msg:					.asciz "Your guess was below the actual number ..."
+	init_msg: 					.asciz "Enter configuration seed: "
+	ez_msg: 					.asciz "Would you like to play in easy mode? (y/n) "
+	ez_high_msg:				.asciz "Your guess was above the actual number ... "
+	ez_low_msg:					.asciz "Your guess was below the actual number ... "
 	guess_msg: 					.asciz "What is your guess? "
 	try_again_msg: 				.asciz "Incorrect. "
 	lose_msg:					.asciz "Game over, you lost :(. The correct answer was "
-	double_msg: 				.asciz "Double or nothing! Would you like to continue to another round?"
+	double_msg: 				.asciz "Double or nothing! Would you like to continue to another round? (y/n) "
 	win_msg:					.asciz "Congratz! You won "
-	win_msg2: 					.asciz " rounds!"
+	win_msg2: 					.asciz " rounds! "
 	num_prompt:					.asciz "%d"
 	chr_prompt:					.asciz "%s"
 	go_down:					.asciz "\n"
@@ -37,17 +37,19 @@
 .globl		main
 .type		main, @function
 	main:
-		#initialising
 		pushq	%rbp
 		movq	%rsp,	%rbp
 
+		# Initializing processes
 		call enter_seed				# Gets seed from user input
-		call check_ez_mode
+		call check_ez_mode			# Accepts user output, and sets the ez flag accordingly
 		call random_num_gen			# Generates a random number between 0 - N
 		# Sets the win counter to 0 since we start a new game
-		mov $0, %eax
-		mov %eax, win_flag	
-		call guessing_game
+		mov $0, %eax				# Moves 0 to eax
+		mov %eax, win_flag			# Sets the win_flag to 0
+
+		# GAMING TIME
+		call guessing_game			# Starts the game loop
 
 		# Return to OS with status 0
 		mov $0, %rax
@@ -59,13 +61,17 @@
         movq %rsp, %rbp	
 
 		movq seed_val, %rdi			# Moves the seed into the rdi register
+		xorq %rax, %rax				# Cleaning rax
 		call srand					# Random number generator pt 1, inputting seed
+
 		xorq %rax, %rax				# Cleaning rax
 		call rand					# Random number generator pt 2
+
+		xorq %rdx, %rdx
 		movl N, %edi				# Moves N into edi
 		divl %edi					# Divides EDX:EAX by edi, saves the reminder in EDX
 		inc %edx					# Increases the remainders by 1, idk why but you wanted it like that for some reason
-		mov  %edx, correct_num		# We move the reminder and make it the random number
+		mov %edx, correct_num		# We move the reminder and make it the random number
 
 		popq %rbp					# We pop the stack and return to main
         ret
@@ -118,8 +124,8 @@
 
 
 		# If the user said yes, turns the ez flag to 1 and activates ez mode
-		mov $1, %ecx
-		mov %ecx, ez_flag
+		mov $1, %ecx				# Moves 1 to ecx
+		mov %ecx, ez_flag			# Moves 1 to the ez flag, indicating that the user will be playing in ez mode
 
 		# Exits
 		end_ez:
@@ -189,7 +195,6 @@
 
 
 		end_cmp:
-		call line_down
 		popq %rbp					# We pop the stack and return to main
         ret
 
@@ -233,6 +238,7 @@
 		# If the user is out of attempts, he loses and we end the game
 		game_over_lose:
 
+		call line_down				# Goes down a line
 		lea lose_msg, %rdi			# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
@@ -251,7 +257,6 @@
 		lea double_msg, %rdi		# Loads the message prompt into rdi
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
-		call line_down
 
 		lea chr_prompt(%rip), %rdi	# We add the prefix to scan the input correctly
     	lea double_answer(%rip), %rsi	# We put the seed number in rsi to be accepted by the scan
@@ -285,13 +290,11 @@
 
 		# In case the user wants to continue, updates the max guess value and resets the win flag, restarts the game
 		double_accepted:
-
-		# Resets win flag
-		xor %ecx, %ecx
-		mov %ecx, win_flag
-
 		# Doubles N and resets the guess counter
 		call double_game
+		# Resets win flag
+		xor %ecx, %ecx				# Turns ecx to 0
+		mov %ecx, win_flag			# Sets the win flag to 0
 		# Generates a new number for the user
 		call random_num_gen
 
@@ -303,14 +306,19 @@
 		pushq %rbp					# Entering a function, pushing stack
         movq %rsp, %rbp	
 
-		# Doubles the value of N
-		mov N, %ecx					
-		imul double_it, %ecx
-		mov %ecx, N
+		# Doubles the value of N, meaning the range of guessale numbers is doubled
+		mov N, %ecx					# Moves N to ecx	
+		imul double_it, %ecx		# Multiplies ecx by 2
+		mov %ecx, N					# Moves ecx back to N, now the max cap for the number is twice as large
 		
 		# Resets the guess counter to 5
-		mov M, %rcx
-		mov %rcx, guess_counter
+		mov M, %rcx					# Moves M (5) to rcx
+		mov %rcx, guess_counter		# Moves 5 to the guess counter
+
+		# Doubles the seed value because you asked for it
+		mov seed_val, %rcx
+		imul double_it, %ecx
+		mov %ecx, seed_val
 
 		popq %rbp					# We pop the stack and return to main				
         ret
