@@ -140,14 +140,9 @@
 
 	win:
 
-		lea win_msg, %rdi			# Loads the message prompt into rdi
-		xor	%rax, %rax				# Cleans rax
-		call printf					# Prints the message prompt with function
-		call line_down
-
 		mov $1, %eax
 		mov %eax, win_flag			# Sets the win flag to 1, indicating that the user won
-		add %rax, win_count			# increases the user's win count by 1
+		add %eax, win_count			# increases the user's win count by 1
 		
 		# Since we are technically still in the comparison function
 		# We do not need to push the stack, but we do want to pop it to avoid returning
@@ -212,6 +207,22 @@
 		cmpb yes, %cl					# compares only cl with 'y', if they're equal, "doubles" the game		
 		je double_accepted
 
+		game_over_win:
+
+		lea win_msg, %rdi			# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+
+		lea num_prompt(%rip), %rdi	# Loads the seeds string into rdi
+		mov win_count, %rsi
+		xor %rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+		
+		lea win_msg2, %rdi			# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+		call line_down
+
 		end_loop:
 
 		popq %rbp					# We pop the stack and return to main				
@@ -223,11 +234,6 @@
 		mov %ecx, win_flag
 
 		call double_game
-
-		mov win_count, %rcx
-		inc %rcx
-		mov %rcx, win_count
-
 		call random_num_gen
 
 		jmp game_loop
