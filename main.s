@@ -5,10 +5,13 @@
 	yes:						.asciz "y"
 	no:							.asciz "n"
 	double_it:					.long 2
+	ez_flag:					.long 0
 
 .section	.rodata				# global constants
 	init_msg: 					.asciz "Enter configuration seed:\n"
 	ez_msg: 					.asciz "Would you like to play in easy mode? (y/n)"
+	ez_high_msg:				.asciz "Your guess was above the actual number ..."
+	ez_low_msg:					.asciz "Your guess was below the actual number ..."
 	guess_msg: 					.asciz "What is your guess? "
 	try_again_msg: 				.asciz "Incorrect. "
 	lose_msg:					.asciz "Game over, you lost :(. The correct answer was "
@@ -39,11 +42,11 @@
 		movq	%rsp,	%rbp
 
 		call enter_seed				# Gets seed from user input
+		call check_ez_mode
 		call random_num_gen			# Generates a random number between 0 - N
 		# Sets the win counter to 0 since we start a new game
 		mov $0, %eax
-		mov %eax, win_flag
-		
+		mov %eax, win_flag	
 		call guessing_game
 
 		# Return to OS with status 0
@@ -94,6 +97,34 @@
 
 		popq %rbp					# We pop the stack and return to main
         ret
+	
+	check_ez_mode:
+		pushq %rbp					# Entering a function, pushing stack
+        movq %rsp, %rbp	
+
+		lea ez_msg, %rdi			# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf	
+
+		lea chr_prompt(%rip), %rdi	# We add the prefix to scan the input correctly
+    	lea ez_mode_answer(%rip), %rsi	# We put the seed number in rsi to be accepted by the scan
+    	xor %rax, %rax				# We clean rax
+    	call scanf					# Calling scanf function
+
+		# Compares the user's answer with 'y', if it's different doesn't touch the ez flag
+		mov ez_mode_answer, %rcx	# Moves the user's input to rcx
+		cmpb yes, %cl				# Compares with the char 'y'
+		jne end_ez					# If it wasn't 'y' ez mode isn't activated
+
+
+		# If the user said yes, turns the ez flag to 1 and activates ez mode
+		mov $1, %ecx
+		mov %ecx, ez_flag
+
+		# Exits
+		end_ez:
+		popq %rbp					# We pop the stack and return to main
+        ret
 
 	guess_num:
 		pushq %rbp					# Entering a function, pushing stack
@@ -135,6 +166,30 @@
 		xor	%rax, %rax				# Cleans rax
 		call printf					# Prints the message prompt with function
 
+		# Checks if ez mode is activated, if not, skips to the end of the function
+		xor %ecx, %ecx				# Sets ecx to 0
+		cmpl ez_flag, %ecx			# compares between ecx and ez_flag
+		je end_cmp					# If they're not equal, jumps to the end
+
+		mov num_guess, %ecx			# Moves the guessed number by the user to ecx
+		cmpl correct_num, %ecx		# Compares it with the correct number
+		jg ez_high					# If the correct number is lower. tells the user their number was too high
+		
+		# o.w their guess was too low
+		lea ez_low_msg, %rdi		# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+		jmp end_cmp					# Jumps to the end
+
+		ez_high:
+
+		lea ez_high_msg, %rdi		# Loads the message prompt into rdi
+		xor	%rax, %rax				# Cleans rax
+		call printf					# Prints the message prompt with function
+
+
+		end_cmp:
+		call line_down
 		popq %rbp					# We pop the stack and return to main
         ret
 
@@ -228,25 +283,32 @@
 		popq %rbp					# We pop the stack and return to main				
         ret
 
+		# In case the user wants to continue, updates the max guess value and resets the win flag, restarts the game
 		double_accepted:
 
-		mov $0, %ecx
+		# Resets win flag
+		xor %ecx, %ecx
 		mov %ecx, win_flag
 
+		# Doubles N and resets the guess counter
 		call double_game
+		# Generates a new number for the user
 		call random_num_gen
 
 		jmp game_loop
 
+	# Doubles the max guess value and resets the guess counter
 	double_game:
 
 		pushq %rbp					# Entering a function, pushing stack
         movq %rsp, %rbp	
 
-		mov N, %ecx
+		# Doubles the value of N
+		mov N, %ecx					
 		imul double_it, %ecx
 		mov %ecx, N
-
+		
+		# Resets the guess counter to 5
 		mov M, %rcx
 		mov %rcx, guess_counter
 
